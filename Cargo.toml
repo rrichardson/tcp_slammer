@@ -1,0 +1,11 @@
+[package]
+name = "slammer"
+version = "0.1.0"
+authors = ["rick"]
+
+[dependencies]
+mioco = "*"
+docopt = "0.6"
+log = "*"
+env_logger = "*"
+rustc-serialize = "0.3"
