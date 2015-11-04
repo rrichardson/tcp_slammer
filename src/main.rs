@@ -102,7 +102,7 @@ fn client(addr : String, num_clients : u32, num_iters : u32) {
                 while j <= num_iters {
                     let sz = {
                         let mut ptr = &mut buf[..];
-                        write!(ptr, "{}", j).unwrap();
+                        write!(ptr, "{}\0", j).unwrap();
                         128 - ptr.len()
                     };
                     conn.write(&mut buf[0 .. sz]).unwrap();
