@@ -8,14 +8,15 @@ use std::str::FromStr;
 use std::str;
 use std::io::{Read, Write};
 use mioco::mio::tcp::{TcpSocket};
+
 use docopt::Docopt;
 
 const USAGE: &'static str = "
 TCP Slammer - Not a virus. I swear.
 
 Usage:
-  slammer listen <address>
-  slammer connect <address> <clients> <iterations>
+  slammer listen <address> <threads>
+  slammer connect <address> <clients> <iterations> <threads>
 
 Options:
   -h --help     Show this screen.
@@ -29,6 +30,7 @@ struct Args {
     arg_iterations: Option<u32>,
     cmd_listen: bool,
     cmd_connect: bool,
+    arg_threads: usize
 }
 
 fn main() {
@@ -40,19 +42,19 @@ fn main() {
     env_logger::init().unwrap();
 
     if args.cmd_listen {
-        server(args.arg_address);
+        server(args.arg_address, args.arg_threads);
     }
     else if args.cmd_connect {
-        client(args.arg_address, args.arg_clients.unwrap(), args.arg_iterations.unwrap());
+        client(args.arg_address, args.arg_clients.unwrap(), args.arg_iterations.unwrap(), args.arg_threads);
     }
     else {
         println!("{}", USAGE);
     }
 }
 
-fn server(addr : String) {
+fn server(addr : String, threads: usize) {
 
-    mioco::start(move |mioco| {
+    mioco::start_threads(threads, move |mioco| {
 
         let sock = try!(TcpSocket::v4());
         try!(sock.bind(&toaddr(&addr)));
@@ -85,11 +87,11 @@ fn server(addr : String) {
     });
 }
 
-fn client(addr : String, num_clients : u32, num_iters : u32) {
+fn client(addr : String, num_clients : u32, num_iters : u32, threads: usize) {
 
     let mut i : u32 = 0;
-    
-    mioco::start(move |mioco| {
+
+    mioco::start_threads(threads, move |mioco| {
 
         while i < num_clients {
             let sock = TcpSocket::v4().unwrap();
@@ -107,8 +109,8 @@ fn client(addr : String, num_clients : u32, num_iters : u32) {
                     };
                     conn.write(&mut buf[0 .. sz]).unwrap();
                     let sz = conn.read(&mut buf).unwrap();
-                    let b = str::from_utf8(&buf[0 .. sz]).unwrap();
-                    println!("{} {}", i, b);
+                    let b = str::from_utf8(&buf[0 .. sz-1]).unwrap();
+                    //println!("{} {}", i, b);
                     let ret = b.parse::<u32>().unwrap();
                     assert!(ret == j);
                     j += 1;
